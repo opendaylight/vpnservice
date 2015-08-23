@@ -41,7 +41,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <bundle>mvn:org.opendaylight.vpnservice/nexthopmgr-impl/${nexthopmgr.version}</bundle>
     <bundle>mvn:org.opendaylight.vpnservice/fibmanager-impl/${fibmanager.version}</bundle>
 
-    <!--<bundle>mvn:org.opendaylight.vpnservice.third-party/org.apache.thriftlib/1.0.2-Lithium-SR1</bundle>-->
+    <!--<bundle>mvn:org.opendaylight.vpnservice.third-party/org.apache.thriftlib/1.0.3-SNAPSHOT</bundle>-->
     <bundle>wrap:mvn:org.apache.thrift/libthrift/0.9.1$overwrite=merge&amp;Bundle-Version=0.9.1&amp;Export-Package=*;-noimport:=true;version="0.9.1"</bundle>
     <!--<bundle>wrap:mvn:javax.servlet/servlet-api/2.5</bundle>-->
 	<configfile finalname="idmanager-impl-default-config.xml">mvn:org.opendaylight.vpnservice/idmanager-impl/${idmanager.version}/xml/config</configfile>
