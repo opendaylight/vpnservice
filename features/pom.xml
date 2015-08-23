@@ -9,22 +9,22 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>features-parent</artifactId>
-    <version>1.5.1-SNAPSHOT</version>
+    <version>1.5.1-Lithium-SR1</version>
     <relativePath/>
   </parent>
   <groupId>org.opendaylight.vpnservice</groupId>
   <artifactId>vpnservice-features</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.1-Lithium-SR1</version>
   <name>${project.artifactId}</name>
   <modelVersion>4.0.0</modelVersion>
   <prerequisites>
     <maven>3.1.1</maven>
   </prerequisites>
   <properties>
-    <mdsal.version>1.2.1-SNAPSHOT</mdsal.version>
-    <openflowplugin.version>0.1.1-SNAPSHOT</openflowplugin.version>
-    <yangtools.version>0.7.1-SNAPSHOT</yangtools.version>
-    <vpnservices.version>0.1.1-SNAPSHOT</vpnservices.version>
+    <mdsal.version>1.2.1-Lithium-SR1</mdsal.version>
+    <openflowplugin.version>0.1.1-Lithium-SR1</openflowplugin.version>
+    <yangtools.version>0.7.1-Lithium-SR1</yangtools.version>
+    <vpnservices.version>0.1.1-Lithium-SR1</vpnservices.version>
     <mdsalutil.version>${vpnservices.version}</mdsalutil.version>
     <vpnmanager.version>${vpnservices.version}</vpnmanager.version>
     <interfacemgr.version>${vpnservices.version}</interfacemgr.version>
@@ -147,7 +147,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>model-bgp</artifactId>
-      <version>2013.07.15.7.1-SNAPSHOT</version>
+      <version>2013.07.15.7.1-Lithium-SR1</version>
     </dependency>
 	<dependency>
       <groupId>${project.groupId}</groupId>
