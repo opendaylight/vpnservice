@@ -27,11 +27,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
 
   <dependencies>
     <dependency>
-      <groupId>org.opendaylight.vpnservice</groupId>
-      <artifactId>mdsalutil-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>vpnintent-api</artifactId>
       <version>${project.version}</version>
@@ -41,6 +36,11 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     <dependency>
       <groupId>org.opendaylight.nic</groupId>
       <artifactId>intent-api</artifactId>
+      <version>${nic.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.nic</groupId>
+      <artifactId>intent-mapping-interface</artifactId>
       <version>${nic.version}</version>
     </dependency>
     <dependency>
@@ -73,11 +73,6 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.nic</groupId>
-      <artifactId>intent-mapping-interface</artifactId>
-      <version>${nic.version}</version>
-    </dependency>
   </dependencies>
 
 </project>
