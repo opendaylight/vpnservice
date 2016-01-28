@@ -115,9 +115,19 @@ public class NeutronBgpvpnChangeListener extends AbstractDataChangeListener<Bgpv
     protected void update(InstanceIdentifier<Bgpvpn> identifier, Bgpvpn original, Bgpvpn update) {
         List<Uuid> oldNetworks = original.getNetworks();
         List<Uuid> newNetworks = update.getNetworks();
+        List<Uuid> oldRouters= original.getRouters();
+        List<Uuid> newRouters = update.getRouters();
+        Uuid vpnId = update.getUuid();
+
         if (LOG.isTraceEnabled()) {
             LOG.trace("Update Bgpvpn : key: " + identifier + ", value=" + update);
         }
+
+        handleNetworksUpdate(vpnId, oldNetworks, newNetworks);
+        handleRoutersUpdate(vpnId, oldRouters, newRouters);
+    }
+
+    protected void handleNetworksUpdate(Uuid vpnId, List<Uuid> oldNetworks, List<Uuid> newNetworks) {
         if (newNetworks != null && !newNetworks.isEmpty()) {
             if (oldNetworks != null && !oldNetworks.isEmpty()) {
                 if (oldNetworks != newNetworks) {
@@ -132,21 +142,70 @@ public class NeutronBgpvpnChangeListener extends AbstractDataChangeListener<Bgpv
                     //clear removed networks
                     if (!oldNetworks.isEmpty()) {
                         LOG.trace("Removing old networks {} ", oldNetworks);
-                        nvpnManager.dissociateNetworksFromVpn(update.getUuid(), oldNetworks);
+                        nvpnManager.dissociateNetworksFromVpn(vpnId, oldNetworks);
                     }
                     //add new (Delta) Networks
                     if (!newNetworks.isEmpty()) {
                         LOG.trace("Adding delta New networks {} ", newNetworks);
-                        nvpnManager.associateNetworksToVpn(update.getUuid(), newNetworks);
+                        nvpnManager.associateNetworksToVpn(vpnId, newNetworks);
                     }
                 }
             } else {
                 //add new Networks
                 LOG.trace("Adding New networks {} ", newNetworks);
-                nvpnManager.associateNetworksToVpn(update.getUuid(), newNetworks);
+                nvpnManager.associateNetworksToVpn(vpnId, newNetworks);
             }
         }
-        // ### TBD : Handle routers
+    }
+
+    protected void handleRoutersUpdate(Uuid vpnId, List<Uuid> oldRouters, List<Uuid> newRouters) {
+        if (newRouters != null && !newRouters.isEmpty()) {
+            if (oldRouters != null && !oldRouters.isEmpty()) {
+                Uuid oldRouter = oldRouters.get(0);
+                Uuid newRouter = newRouters.get(0);
+                if (oldRouter != newRouter) {
+                    nvpnManager.dissociateRouterFromVpn(vpnId, oldRouter);
+                    nvpnManager.associateRouterToVpn(vpnId, newRouter);
+                }
+            } else {
+                nvpnManager.associateRouterToVpn(vpnId, newRouters.get(0));
+            }
+        } else {
+            /* dissociate old router */
+            if (oldRouters != null && !oldRouters.isEmpty()) {
+                Uuid oldRouter = oldRouters.get(0);
+                nvpnManager.dissociateRouterFromVpn(vpnId, oldRouter);
+            }
+        }
+
+/* TBD : multiple rotuer support
+                if (oldRouters != newRouters) {
+                    Iterator<Uuid> iter = newRouters.iterator();
+                    while (iter.hasNext()) {
+                        Object net = iter.next();
+                        if (oldRouters.contains(net)) {
+                            oldRouters.remove(net);
+                            iter.remove();
+                        }
+                    }
+                    //clear removed routers
+                    if (!oldRouters.isEmpty()) {
+                        LOG.trace("Removing old routers {} ", oldRouters);
+                        nvpnManager.dissociateRoutersFromVpn(vpnId, oldRouters);
+                    }
+                    //add new (Delta) routers
+                    if (!newRouters.isEmpty()) {
+                        LOG.trace("Adding delta New routers {} ", newRouters);
+                        nvpnManager.associateRoutersToVpn(vpnId, newRouters);
+                    }
+                }
+            } else {
+                //add new routers
+                LOG.trace("Adding New routers {} ", newRouters);
+                nvpnManager.associateRoutersToVpn(vpnId, newRouters);
+            }
+
+        }*/
     }
 
 }
