@@ -72,6 +72,10 @@ public class NodeListener extends AbstractDataChangeListener<Node> implements Au
     protected void add(InstanceIdentifier<Node> identifier, Node add) {
         NodeId nodeId = add.getId();
         String[] node =  nodeId.getValue().split(":");
+        if(node.length < 2) {
+            LOG.warn("Unexpected nodeId {}", nodeId.getValue());
+            return;
+        }
         BigInteger dpId = new BigInteger(node[1]);
         dhcpManager.installDhcpEntries(dpId);
     }
