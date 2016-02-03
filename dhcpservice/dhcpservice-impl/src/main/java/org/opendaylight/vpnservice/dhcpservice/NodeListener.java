@@ -77,7 +77,7 @@ public class NodeListener extends AbstractDataChangeListener<Node> implements Au
             return;
         }
         BigInteger dpId = new BigInteger(node[1]);
-        dhcpManager.installDhcpEntries(dpId);
+        dhcpManager.setupTableMissForDhcpTable(dpId);
     }
 
     @Override
