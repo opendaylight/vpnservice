@@ -22,6 +22,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.interfaces.rev140508.interfaces.InterfaceBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.interfaces.rev140508.interfaces.InterfaceKey;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.iana._if.type.rev140508.Tunnel;
@@ -62,7 +63,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.interfaces.
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.opendaylight.vpnservice.mdsalutil.ActionInfo;
 import org.opendaylight.vpnservice.mdsalutil.ActionType;
 import org.opendaylight.vpnservice.mdsalutil.FlowEntity;
@@ -72,6 +72,7 @@ import org.opendaylight.vpnservice.mdsalutil.MatchFieldType;
 import org.opendaylight.vpnservice.mdsalutil.MatchInfo;
 import org.opendaylight.vpnservice.mdsalutil.MetaDataUtil;
 import org.opendaylight.vpnservice.mdsalutil.NwConstants;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
@@ -191,11 +192,15 @@ public class ItmUtils {
     }
 
     public static Interface buildTunnelInterface(BigInteger dpn, String ifName, String desc, boolean enabled, Class<? extends TunnelTypeBase> tunType,
-       IpAddress localIp, IpAddress remoteIp, IpAddress gatewayIp, boolean internal) {
+       IpAddress localIp, IpAddress remoteIp, IpAddress gatewayIp,Integer vlanId, boolean internal) {
        InterfaceBuilder builder = new InterfaceBuilder().setKey(new InterfaceKey(ifName)).setName(ifName)
        .setDescription(desc).setEnabled(enabled).setType(Tunnel.class);
        ParentRefs parentRefs = new ParentRefsBuilder().setDatapathNodeIdentifier(dpn).build();
        builder.addAugmentation(ParentRefs.class, parentRefs);
+       if( vlanId > 0) {
+           IfL2vlan l2vlan = new IfL2vlanBuilder().setVlanId(new VlanId(vlanId)).build();
+           builder.addAugmentation(IfL2vlan.class, l2vlan);
+        }
        IfTunnel tunnel = new IfTunnelBuilder().setTunnelDestination(remoteIp).setTunnelGateway(gatewayIp).setTunnelSource(localIp)
        .setTunnelInterfaceType( tunType).setInternal(internal).build();
        builder.addAugmentation(IfTunnel.class, tunnel);

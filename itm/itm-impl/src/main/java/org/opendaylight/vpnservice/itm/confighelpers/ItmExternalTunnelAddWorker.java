@@ -66,7 +66,7 @@ public class ItmExternalTunnelAddWorker {
               IpAddress gwyIpAddress = (utils.getInfo().isInRange(dcGwyIpStr) ) ? null : firstEndPt.getGwIpAddress() ;
               String ifDescription = tunType.getName();
               logger.debug(  " Creating Trunk Interface with parameters trunk I/f Name - {}, parent I/f name - {}, source IP - {}, DC Gateway IP - {} gateway IP - {}",trunkInterfaceName, interfaceName, firstEndPt.getIpAddress(), extIp, gwyIpAddress ) ;
-              Interface iface = ItmUtils.buildTunnelInterface(teps.getDPNID(), trunkInterfaceName, String.format( "%s %s",ifDescription, "Trunk Interface"), true, tunType, firstEndPt.getIpAddress(), extIp, gwyIpAddress, false) ;
+              Interface iface = ItmUtils.buildTunnelInterface(teps.getDPNID(), trunkInterfaceName, String.format( "%s %s",ifDescription, "Trunk Interface"), true, tunType, firstEndPt.getIpAddress(), extIp, gwyIpAddress, firstEndPt.getVLANID(), false) ;
               logger.debug(  " Trunk Interface builder - {} ", iface ) ;
               InstanceIdentifier<Interface> trunkIdentifier = ItmUtils.buildId(trunkInterfaceName);
               logger.debug(  " Trunk Interface Identifier - {} ", trunkIdentifier ) ;

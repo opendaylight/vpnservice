@@ -152,7 +152,7 @@ public class ItmInternalTunnelAddWorker {
         String trunkInterfaceName = ItmUtils.getTrunkInterfaceName(idManagerService, interfaceName,srcte.getIpAddress().getIpv4Address().getValue(), dstte.getIpAddress().getIpv4Address().getValue()) ;
         IpAddress gwyIpAddress = ( srcte.getSubnetMask().equals(dstte.getSubnetMask()) ) ? null : srcte.getGwIpAddress() ;
         logger.debug(  " Creating Trunk Interface with parameters trunk I/f Name - {}, parent I/f name - {}, source IP - {}, destination IP - {} gateway IP - {}",trunkInterfaceName, interfaceName, srcte.getIpAddress(), dstte.getIpAddress(), gwyIpAddress ) ;
-        Interface iface = ItmUtils.buildTunnelInterface(srcDpnId, trunkInterfaceName, String.format( "%s %s",ifDescription, "Trunk Interface"), true, tunType, srcte.getIpAddress(), dstte.getIpAddress(), gwyIpAddress, true) ;
+        Interface iface = ItmUtils.buildTunnelInterface(srcDpnId, trunkInterfaceName, String.format( "%s %s",ifDescription, "Trunk Interface"), true, tunType, srcte.getIpAddress(), dstte.getIpAddress(), gwyIpAddress, srcte.getVLANID(), true) ;
         logger.debug(  " Trunk Interface builder - {} ", iface ) ;
         InstanceIdentifier<Interface> trunkIdentifier = ItmUtils.buildId(trunkInterfaceName);
         logger.debug(  " Trunk Interface Identifier - {} ", trunkIdentifier ) ;
