@@ -86,7 +86,6 @@ public class DhcpPktHandler implements AutoCloseable, PacketProcessingListener {
     public void onPacketReceived(PacketReceived packet) {
         LOG.trace("Pkt received: {}", packet);
         Class<? extends PacketInReason> pktInReason = packet.getPacketInReason();
-        short tableId = packet.getTableId().getValue();
         if (isPktInReasonSendtoCtrl(pktInReason)) {
             byte[] inPayload = packet.getPayload();
             Ethernet ethPkt = new Ethernet();
@@ -110,7 +109,8 @@ public class DhcpPktHandler implements AutoCloseable, PacketProcessingListener {
                     sendPacketOut(pktOut, pair.getLeft(), interfaceName);
                 }
             } catch (Exception e) {
-                LOG.warn("Failed to get DHCP Reply {}", e);
+                LOG.warn("Failed to get DHCP Reply");
+                LOG.trace("Reason for failure {}", e);
             }
         }
     }
@@ -181,7 +181,7 @@ public class DhcpPktHandler implements AutoCloseable, PacketProcessingListener {
 
     private DHCP getDhcpPktIn(Ethernet actualEthernetPacket) {
         Ethernet ethPkt = actualEthernetPacket;
-        LOG.trace("Inside getDhcpPktIn ethPkt {} \n getPayload {}", ethPkt, ethPkt.getPayload());
+        LOG.trace("Inside getDhcpPktIn ethPkt {}", ethPkt);
         if (ethPkt.getEtherType() == (short)NwConstants.ETHTYPE_802_1Q) {
             ethPkt = (Ethernet)ethPkt.getPayload();
         }
@@ -197,7 +197,8 @@ public class DhcpPktHandler implements AutoCloseable, PacketProcessingListener {
                     try {
                         reply.deserialize(rawDhcpPayload, 0, rawDhcpPayload.length);
                     } catch (PacketException e) {
-                        LOG.warn("Failed to deserialize DHCP pkt {}", e);
+                        LOG.warn("Failed to deserialize DHCP pkt");
+                        LOG.trace("Reason for failure {}", e);
                         return null;
                     }
                     return reply;
