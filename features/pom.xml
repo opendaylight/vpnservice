@@ -9,28 +9,28 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>features-parent</artifactId>
-    <version>1.6.0-Beryllium</version>
+    <version>1.6.1-SNAPSHOT</version>
     <relativePath/>
   </parent>
   <groupId>org.opendaylight.vpnservice</groupId>
   <artifactId>vpnservice-features</artifactId>
-  <version>0.2.0-Beryllium</version>
+  <version>0.2.1-SNAPSHOT</version>
   <name>${project.artifactId}</name>
   <modelVersion>4.0.0</modelVersion>
   <prerequisites>
     <maven>3.1.1</maven>
   </prerequisites>
   <properties>
-    <mdsal.version>1.3.0-Beryllium</mdsal.version>
-    <openflowplugin.version>0.2.0-Beryllium</openflowplugin.version>
-    <restconf.version>1.3.0-Beryllium</restconf.version>
-    <yangtools.version>0.8.0-Beryllium</yangtools.version>
-    <mdsal.model.version>0.8.0-Beryllium</mdsal.model.version>
-    <vpnservices.version>0.2.0-Beryllium</vpnservices.version>
-    <ovsdb.version>1.2.1-Beryllium</ovsdb.version>
-    <liblldp.version>0.10.0-Beryllium</liblldp.version>
-    <neutron.version>0.6.0-Beryllium</neutron.version>
-    <nic.version>1.1.0-Beryllium</nic.version>
+    <mdsal.version>1.3.1-SNAPSHOT</mdsal.version>
+    <openflowplugin.version>0.2.1-SNAPSHOT</openflowplugin.version>
+    <restconf.version>1.3.1-SNAPSHOT</restconf.version>
+    <yangtools.version>0.8.1-SNAPSHOT</yangtools.version>
+    <mdsal.model.version>0.8.1-SNAPSHOT</mdsal.model.version>
+    <vpnservices.version>0.2.1-SNAPSHOT</vpnservices.version>
+    <ovsdb.version>1.2.2-SNAPSHOT</ovsdb.version>
+    <liblldp.version>0.10.1-SNAPSHOT</liblldp.version>
+    <neutron.version>0.6.1-SNAPSHOT</neutron.version>
+    <nic.version>1.1.1-SNAPSHOT</nic.version>
     <arputil.version>${vpnservices.version}</arputil.version>
     <mdsalutil.version>${vpnservices.version}</mdsalutil.version>
     <vpnmanager.version>${vpnservices.version}</vpnmanager.version>
@@ -259,7 +259,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html INTERNAL
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>model-bgp</artifactId>
-      <version>2013.07.15.8-Beryllium</version>
+      <version>2013.07.15.8.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
