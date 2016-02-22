@@ -18,6 +18,7 @@ import org.opendaylight.vpnservice.mdsalutil.MetaDataUtil;
 import org.opendaylight.vpnservice.mdsalutil.interfaces.IMdsalApiManager;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.PhysAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.*;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.alivenessmonitor.rev150629.LivenessState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.elan.rev150602.elan.tag.name.map.ElanTagName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.elan.rev150602.forwarding.entries.MacEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.interfacemgr.meta.rev151007._if.indexes._interface.map.IfIndexInterface;
@@ -25,6 +26,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.interfacemgr.met
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
+
 
 import java.math.BigInteger;
 
@@ -113,9 +119,25 @@ public class ElanSmacFlowEventListener implements SalFlowListener {
             if(macEntry != null && interfaceInfo != null) {
                 ElanUtils.deleteMacFlows(ElanUtils.getElanInstanceByName(elanTagInfo.getName()), interfaceInfo, macEntry);
             }
-            InstanceIdentifier<MacEntry> macEntryId =  ElanUtils.getInterfaceMacEntriesIdentifierOperationalDataPath(interfaceName, physAddress);
-            ElanUtils.delete(broker, LogicalDatastoreType.OPERATIONAL, macEntryId);
+            InstanceIdentifier<MacEntry> macEntryIdForElanInterface =  ElanUtils.getInterfaceMacEntriesIdentifierOperationalDataPath(interfaceName, physAddress);
+            InstanceIdentifier<MacEntry> macEntryIdForElanInstance  =  ElanUtils.getMacEntryOperationalDataPath(elanTagInfo.getName(), physAddress);
+            WriteTransaction tx = broker.newWriteOnlyTransaction();
+            tx.delete(LogicalDatastoreType.OPERATIONAL, macEntryIdForElanInterface);
+            tx.delete(LogicalDatastoreType.OPERATIONAL, macEntryIdForElanInstance);
+            ListenableFuture<Void> writeResult = tx.submit();
+
+            //WRITE Callback
+            Futures.addCallback(writeResult, new FutureCallback<Void>() {
+                @Override
+                public void onSuccess(Void noarg) {
+                    logger.debug("Successfully removed macEntries from Operational Datastore");
+                }
+
+                @Override
+                public void onFailure(Throwable error) {
+                    logger.debug("Error while removing macEntries from Operational Datastore", error);
+                }
+            });
         }
     }
-
 }
