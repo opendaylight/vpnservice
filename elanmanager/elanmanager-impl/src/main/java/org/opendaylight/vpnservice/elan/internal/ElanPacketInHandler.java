@@ -7,19 +7,19 @@
  */
 package org.opendaylight.vpnservice.elan.internal;
 
+import java.math.BigInteger;
+
+import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.vpnservice.elan.utils.ElanConstants;
 import org.opendaylight.vpnservice.elan.utils.ElanUtils;
-//import org.opendaylight.vpnservice.interfacemgr.globals.InterfaceInfo;
 import org.opendaylight.vpnservice.interfacemgr.globals.InterfaceInfo;
 import org.opendaylight.vpnservice.interfacemgr.interfaces.IInterfaceManager;
 import org.opendaylight.vpnservice.mdsalutil.MDSALUtil;
 import org.opendaylight.vpnservice.mdsalutil.MetaDataUtil;
 import org.opendaylight.vpnservice.mdsalutil.NWUtil;
-import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.vpnservice.mdsalutil.packet.Ethernet;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.PhysAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.NoMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketInReason;
@@ -36,8 +36,9 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
+import com.google.common.base.Optional;
 
+@SuppressWarnings("deprecation")
 public class ElanPacketInHandler implements PacketProcessingListener {
 
     private final DataBroker broker;
@@ -72,12 +73,12 @@ public class ElanPacketInHandler implements PacketProcessingListener {
 
                 long portTag = MetaDataUtil.getLportFromMetadata(metadata).intValue();
 
-                IfIndexInterface interfaceInfo = ElanUtils.getInterfaceInfoByInterfaceTag(portTag);
-                if (interfaceInfo == null) {
+                Optional<IfIndexInterface> interfaceInfoOp = ElanUtils.getInterfaceInfoByInterfaceTag(portTag);
+                if (!interfaceInfoOp.isPresent()) {
                     logger.warn("There is no interface for given portTag {}", portTag);
                     return;
                 }
-                String interfaceName = interfaceInfo.getInterfaceName();
+                String interfaceName = interfaceInfoOp.get().getInterfaceName();
                 ElanTagName elanTagName = ElanUtils.getElanInfoByElanTag(elanTag);
                 String elanName = elanTagName.getName();
                 Elan elanInfo = ElanUtils.getElanByName(elanName);

@@ -194,7 +194,7 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
         InstanceIdentifier<ElanInterfaceMac> elanInterfaceId = ElanUtils.getElanInterfaceMacEntriesOperationalDataPath(interfaceName);
         Optional<ElanInterfaceMac> existingElanInterface = ElanUtils.read(broker, LogicalDatastoreType.OPERATIONAL, elanInterfaceId);
         if(existingElanInterface.isPresent()) {
-            List<MacEntry> macEntries = existingElanInterface.get().getMacEntry();
+            List<MacEntry> macEntries = new ArrayList<>(existingElanInterface.get().getMacEntry());
             if(macEntries != null && !macEntries.isEmpty()) {
                 for (MacEntry macEntry : macEntries) {
                     logger.debug("removing the  mac-entry:{} present on elanInterface:{}", macEntry.getMacAddress().getValue(), interfaceName);

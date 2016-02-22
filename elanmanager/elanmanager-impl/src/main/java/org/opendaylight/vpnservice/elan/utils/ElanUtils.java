@@ -337,14 +337,10 @@ public class ElanUtils {
     }
 
     // interface-index-tag operational container
-    public static IfIndexInterface getInterfaceInfoByInterfaceTag(long interfaceTag) {
+    public static Optional<IfIndexInterface> getInterfaceInfoByInterfaceTag(long interfaceTag) {
         DataBroker broker = elanServiceProvider.getBroker();
         InstanceIdentifier<IfIndexInterface> interfaceId = getInterfaceInfoEntriesOperationalDataPath(interfaceTag);
-        Optional<IfIndexInterface> existingInterfaceInfo = ElanUtils.read(broker, LogicalDatastoreType.OPERATIONAL, interfaceId);
-        if(existingInterfaceInfo.isPresent()) {
-            return existingInterfaceInfo.get();
-        }
-        return null;
+        return ElanUtils.read(broker, LogicalDatastoreType.OPERATIONAL, interfaceId);
     }
 
     public static InstanceIdentifier<IfIndexInterface> getInterfaceInfoEntriesOperationalDataPath(long interfaceTag) {
@@ -663,32 +659,31 @@ public class ElanUtils {
 
     public static void deleteMacFlows(ElanInstance elanInfo, InterfaceInfo interfaceInfo, String macAddress, boolean deleteSmac) {
         String elanInstanceName = elanInfo.getElanInstanceName();
-        String ifName = interfaceInfo.getInterfaceName();
         long ifTag = interfaceInfo.getInterfaceTag();
         List<DpnInterfaces> remoteFEs = getInvolvedDpnsInElan(elanInstanceName);
         IMdsalApiManager mdsalApiManager = elanServiceProvider.getMdsalManager();
         ItmRpcService itmRpcService = elanServiceProvider.getItmRpcService();
         BigInteger srcdpId = interfaceInfo.getDpId();
-        String displayName = elanInstanceName;
-        long groupId = interfaceInfo.getGroupId();
         for (DpnInterfaces dpnInterface: remoteFEs) {
             Long elanTag = elanInfo.getElanTag();
-            if (dpnInterface.getDpId().equals(srcdpId)) {
+            BigInteger dstDpId = dpnInterface.getDpId();
+            if (dstDpId.equals(srcdpId)) {
                 if(deleteSmac) {
-                    mdsalApiManager.removeFlow(getKnownSmacFlowEntity(elanInfo, interfaceInfo, 0, macAddress));
+                    mdsalApiManager.removeFlow(srcdpId, MDSALUtil.buildFlow(ElanConstants.ELAN_SMAC_TABLE,
+                            getKnownDynamicmacFlowRef(ElanConstants.ELAN_SMAC_TABLE, srcdpId, ifTag, macAddress, elanTag)));
                 }
-                mdsalApiManager.removeFlow(dpnInterface.getDpId(), getLocalDmacFlowEntry(elanTag, dpnInterface.getDpId(), ifName, macAddress, displayName, ifTag));
-                RemoveTerminatingServiceActionsInput removeTerminatingServiceActionsInput = new RemoveTerminatingServiceActionsInputBuilder().setServiceId(interfaceInfo.getInterfaceTag()).setDpnId(dpnInterface.getDpId()).build();
+                mdsalApiManager.removeFlow(srcdpId, MDSALUtil.buildFlow(ElanConstants.ELAN_DMAC_TABLE,
+                        getKnownDynamicmacFlowRef(ElanConstants.ELAN_DMAC_TABLE, srcdpId, ifTag, macAddress, elanTag)));
+                RemoveTerminatingServiceActionsInput removeTerminatingServiceActionsInput = new RemoveTerminatingServiceActionsInputBuilder().setServiceId(interfaceInfo.getInterfaceTag()).setDpnId(srcdpId).build();
                 itmRpcService.removeTerminatingServiceActions(removeTerminatingServiceActionsInput);
                   if (logger.isDebugEnabled()) {
-                    logger.debug("All the required flows deleted for elan:{}, logical Interface port:{} and mac address:{} on dpn:{}", elanInstanceName, interfaceInfo.getPortName(), macAddress, dpnInterface.getDpId());
+                    logger.debug("All the required flows deleted for elan:{}, logical Interface port:{} and mac address:{} on dpn:{}", elanInstanceName, interfaceInfo.getPortName(), macAddress, srcdpId);
                 }
-            } else if (isDpnPresent(dpnInterface.getDpId())) {
-                mdsalApiManager.removeFlow(dpnInterface.getDpId(),
-                        getRemoteDmacFlowEntry(dpnInterface.getDpId(), srcdpId, interfaceInfo.getInterfaceTag(), elanTag, macAddress,
-                                displayName));
+            } else if (isDpnPresent(dstDpId)) {
+                mdsalApiManager.removeFlow(dstDpId, MDSALUtil.buildFlow(ElanConstants.ELAN_DMAC_TABLE,
+                        getKnownDynamicmacFlowRef(ElanConstants.ELAN_DMAC_TABLE, srcdpId, dstDpId, macAddress, elanTag)));
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Dmac flow entry deleted for elan:{}, logical interface port:{} and mac address:{} on dpn:{}", elanInstanceName, interfaceInfo.getPortName(), macAddress, dpnInterface.getDpId());
+                    logger.debug("Dmac flow entry deleted for elan:{}, logical interface port:{} and mac address:{} on dpn:{}", elanInstanceName, interfaceInfo.getPortName(), macAddress, dstDpId);
                 }
             }
         }

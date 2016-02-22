@@ -138,6 +138,10 @@ public class MDSALUtil {
                 .setCookie(new FlowCookie(cookie)).build();
     }
 
+    public static Flow buildFlow(short tableId, String flowId) {
+        return new FlowBuilder().setTableId(tableId).setId(new FlowId(flowId)).build();
+    }
+
     public static Flow buildFlowNew(short tableId, String flowId, int priority, String flowName, int idleTimeOut,
                                  int hardTimeOut, BigInteger cookie, List<MatchInfo> listMatchInfo, List<Instruction> listInstructionInfo) {
         return MDSALUtil.buildFlowNew(tableId, flowId, priority, flowName, idleTimeOut, hardTimeOut, cookie,
