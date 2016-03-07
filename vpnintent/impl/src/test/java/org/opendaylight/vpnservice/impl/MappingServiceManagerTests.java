@@ -30,12 +30,14 @@ public class MappingServiceManagerTests {
         String switchPortId = "openflow:1:3";
         long mplsLabel = 10L;
         String nextHop = "16.101.233.1/8";
+        String serverMacAddress = "10:40:f3:a8:86:11";
 
         Map<String, String> map = new HashMap<>();
         map.put("ip_prefix", ipPrefix);
         map.put("switch_port", switchPortId);
         map.put("mpls_label", String.valueOf(mplsLabel));
         map.put("next_hop", nextHop);
+        map.put("server_mac_address", serverMacAddress);
 
         IntentMappingService mapSvc = mock(IntentMappingService.class);
         when(mapSvc.get(any(String.class))).thenReturn(map);
@@ -43,7 +45,7 @@ public class MappingServiceManagerTests {
         MappingServiceManager manager = new MappingServiceManager(mapSvc);
 
         // Act
-        manager.add(siteName, ipPrefix, switchPortId, mplsLabel, nextHop);
+        manager.add(siteName, ipPrefix, switchPortId, mplsLabel, nextHop, serverMacAddress);
 
         Map<String, String> returnedObjs = manager.get(siteName);
 
@@ -60,17 +62,19 @@ public class MappingServiceManagerTests {
         String siteName = "UoR";
         String ipPrefix = "16.101.233.2/8";
         String switchPortId = "openflow:1:3";
+        String serverMacAddress = "10:40:f3:a8:86:11";
 
         Map<String, String> map = new HashMap<>();
         map.put("ip_prefix", ipPrefix);
         map.put("switch_port", switchPortId);
+        map.put("server_mac_address", serverMacAddress);
 
         IntentMappingService mapSvc = mock(IntentMappingService.class);
 
         MappingServiceManager manager = new MappingServiceManager(mapSvc);
 
         // Add first to delete next
-        manager.add(siteName, ipPrefix, switchPortId, null, null);
+        manager.add(siteName, ipPrefix, switchPortId, null, null, serverMacAddress);
 
         // Act
         boolean result = manager.delete(siteName);

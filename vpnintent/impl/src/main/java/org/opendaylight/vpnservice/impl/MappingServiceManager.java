@@ -25,6 +25,7 @@ public class MappingServiceManager {
     private String SWITCH_PORT_ID_PROPERTY = "switch_port";
     private String MPLS_LABEL_PROPERTY = "mpls_label";
     private String NEXT_HOP_PROPERTY = "next_hop";
+    private String SERVER_MAC_ADDRESS = "server_mac_address";
 
     public MappingServiceManager(IntentMappingService intentMappingService) {
         Preconditions.checkNotNull(intentMappingService);
@@ -37,14 +38,14 @@ public class MappingServiceManager {
      * @param ipPrefix
      *            Ip prefix of the member
      * @param switchPortId
-     *            Switch ID and port ID (i.e. openflow:1:2)
+ *            Switch ID and port ID (i.e. openflow:1:2)
      * @param mplsLabel
-     *            MPLS label, if needed
-     * @param nextHop
-     *            Next hop in the route
+*            MPLS label, if needed
+     * @param nextHop Next Hop
+     * @param serverMacAddress Server MAC Address
      */
     public void add(final String siteName, final String ipPrefix, final String switchPortId, final Long mplsLabel,
-            final String nextHop) {
+                    final String nextHop, final String serverMacAddress) {
         Preconditions.checkNotNull(siteName);
         Preconditions.checkNotNull(ipPrefix);
         Preconditions.checkNotNull(switchPortId);
@@ -52,6 +53,7 @@ public class MappingServiceManager {
         Map<String, String> objs = new HashMap<>();
         objs.put(IP_PREFIX_PROPERTY, ipPrefix);
         objs.put(SWITCH_PORT_ID_PROPERTY, switchPortId);
+        objs.put(SERVER_MAC_ADDRESS, serverMacAddress);
 
         if (mplsLabel != null)
             objs.put(MPLS_LABEL_PROPERTY, String.valueOf(mplsLabel));
