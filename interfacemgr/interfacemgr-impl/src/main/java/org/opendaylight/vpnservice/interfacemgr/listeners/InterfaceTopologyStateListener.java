@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
+ * Copyright (c) 2015 - 2016 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -48,7 +48,7 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
 
     @Override
     protected AsyncDataBroker.DataChangeScope getDataChangeScope() {
-        return AsyncDataBroker.DataChangeScope.BASE;
+        return AsyncDataBroker.DataChangeScope.ONE;
     }
 
     @Override
@@ -63,8 +63,13 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
     @Override
     protected void update(InstanceIdentifier<OvsdbBridgeAugmentation> identifier, OvsdbBridgeAugmentation bridgeOld,
                           OvsdbBridgeAugmentation bridgeNew) {
-        LOG.info("Received Update DataChange Notification for identifier: {}, ovsdbBridgeAugmentation old: {}, new: {}." +
-                "No Action Performed.", identifier, bridgeOld, bridgeNew);
+        LOG.debug("Received Update DataChange Notification for identifier: {}, ovsdbBridgeAugmentation old: {}, new: {}.",
+                identifier, bridgeOld, bridgeNew);
+        if(bridgeOld.getDatapathId()== null && bridgeNew.getDatapathId()!= null){
+            DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
+            RendererStateAddWorker rendererStateAddWorker = new RendererStateAddWorker(identifier, bridgeNew);
+            jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue() + bridgeNew.getDatapathId(), rendererStateAddWorker);
+        }
     }
 
     @Override

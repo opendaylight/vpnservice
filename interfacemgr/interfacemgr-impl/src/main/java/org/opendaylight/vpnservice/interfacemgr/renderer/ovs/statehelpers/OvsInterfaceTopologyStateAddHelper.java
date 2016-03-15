@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
+ * Copyright (c) 2015 - 2016 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -44,23 +44,11 @@ public class OvsInterfaceTopologyStateAddHelper {
         WriteTransaction writeTransaction = dataBroker.newWriteOnlyTransaction();
 
         if (bridgeNew.getDatapathId() == null) {
-            LOG.warn("DataPathId found as null for Bridge Augmentation: {}... retrying...", bridgeNew);
-            Optional<OvsdbBridgeAugmentation> bridgeNodeOptional = IfmUtil.read(LogicalDatastoreType.OPERATIONAL, bridgeIid, dataBroker);
-            if (bridgeNodeOptional.isPresent()) {
-                bridgeNew = bridgeNodeOptional.get();
-            }
-            if (bridgeNew.getDatapathId() == null) {
-                LOG.warn("DataPathId found as null again for Bridge Augmentation: {}. Bailing out.", bridgeNew);
-                return futures;
-            }
+            LOG.warn("DataPathId found as null for Bridge Augmentation: {}... returning...", bridgeNew);
+            return futures;
         }
         String bridgeName = bridgeNew.getBridgeName().getValue();
         BigInteger dpnId = IfmUtil.getDpnId(bridgeNew.getDatapathId());
-
-        if (dpnId == null) {
-            LOG.warn("Got Null DPID for Bridge: {}", bridgeNew);
-            return futures;
-        }
 
         // create bridge reference entry in interface meta operational DS
         InterfaceMetaUtils.createBridgeRefEntry(dpnId, bridgeIid, writeTransaction);
