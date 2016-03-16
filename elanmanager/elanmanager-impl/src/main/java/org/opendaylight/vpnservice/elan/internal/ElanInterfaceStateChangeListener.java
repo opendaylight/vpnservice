@@ -95,7 +95,7 @@ public class ElanInterfaceStateChangeListener extends AbstractDataChangeListener
             return;
         }
         NodeConnectorId nodeConnectorId = new NodeConnectorId(delIf.getLowerLayerIf().get(0));
-        BigInteger dpId = MDSALUtil.getDpnIdFromNodeName(nodeConnectorId.getValue());
+        BigInteger dpId = BigInteger.valueOf(MDSALUtil.getDpnIdFromPortName(nodeConnectorId));
         InterfaceInfo interfaceInfo = new InterfaceInfo(dpId, nodeConnectorId.getValue());
         interfaceInfo.setInterfaceName(interfaceName);
         interfaceInfo.setInterfaceType(InterfaceInfo.InterfaceType.VLAN_INTERFACE);

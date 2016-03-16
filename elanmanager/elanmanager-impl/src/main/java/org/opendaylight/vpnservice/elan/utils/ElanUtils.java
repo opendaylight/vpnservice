@@ -676,7 +676,7 @@ public class ElanUtils {
                 }
             } else if (isDpnPresent(dstDpId)) {
                 mdsalApiManager.removeFlow(dstDpId, MDSALUtil.buildFlow(ElanConstants.ELAN_DMAC_TABLE,
-                        getKnownDynamicmacFlowRef(ElanConstants.ELAN_DMAC_TABLE, srcdpId, dstDpId, macAddress, elanTag)));
+                        getKnownDynamicmacFlowRef(ElanConstants.ELAN_DMAC_TABLE, dstDpId, srcdpId, macAddress, elanTag)));
                 if (logger.isDebugEnabled()) {
                     logger.debug("Dmac flow entry deleted for elan:{}, logical interface port:{} and mac address:{} on dpn:{}", elanInstanceName, interfaceInfo.getPortName(), macAddress, dstDpId);
                 }

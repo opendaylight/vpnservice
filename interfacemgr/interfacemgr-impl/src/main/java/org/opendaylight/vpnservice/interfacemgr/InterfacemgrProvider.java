@@ -192,13 +192,17 @@ public class InterfacemgrProvider implements BindingAwareProvider, AutoCloseable
         org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.interfaces.rev140508.interfaces.state.Interface
                 ifState = InterfaceManagerCommonUtils.getInterfaceStateFromOperDS(interfaceName,dataBroker);
 
-        if(ifState == null){
+        if(ifState == null) {
             LOG.error("Interface {} is not present", interfaceName);
             return null;
         }
 
         Integer lportTag = ifState.getIfIndex();
         Interface intf = InterfaceManagerCommonUtils.getInterfaceFromConfigDS(new InterfaceKey(interfaceName), dataBroker);
+        if (intf == null) {
+            LOG.error("Interface {} doesn't exist in config datastore", interfaceName);
+            return null;
+        }
 
         NodeConnectorId ncId = IfmUtil.getNodeConnectorIdFromInterface(intf, dataBroker);
         InterfaceInfo.InterfaceType interfaceType = IfmUtil.getInterfaceType(intf);

@@ -193,8 +193,12 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
         InstanceIdentifier<ElanInterfaceMac> elanInterfaceId = ElanUtils.getElanInterfaceMacEntriesOperationalDataPath(interfaceName);
         Optional<ElanInterfaceMac> existingElanInterface = ElanUtils.read(broker, LogicalDatastoreType.OPERATIONAL, elanInterfaceId);
         if(existingElanInterface.isPresent()) {
-            List<MacEntry> macEntries = new ArrayList<>(existingElanInterface.get().getMacEntry());
-            if(macEntries != null && !macEntries.isEmpty()) {
+            List<MacEntry> existingMacEntries = existingElanInterface.get().getMacEntry();
+            List<MacEntry> macEntries = new ArrayList<>();
+            if (existingMacEntries != null && !existingMacEntries.isEmpty()) {
+                macEntries.addAll(existingMacEntries);
+            }
+            if(!macEntries.isEmpty()) {
                 for (MacEntry macEntry : macEntries) {
                     logger.debug("removing the  mac-entry:{} present on elanInterface:{}", macEntry.getMacAddress().getValue(), interfaceName);
                     elanForwardingEntriesHandler.deleteElanInterfaceForwardingEntries(elanInfo, interfaceInfo, macEntry);
@@ -290,6 +294,10 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
         String elanInstanceName = elanInterfaceAdded.getElanInstanceName();
         String interfaceName = elanInterfaceAdded.getName();
         InterfaceInfo interfaceInfo = interfaceManager.getInterfaceInfo(interfaceName);
+        if (interfaceInfo == null) {
+            logger.warn("Interface {} is removed from Interface Oper DS due to port down ", interfaceName);
+            return;
+        }
         ElanInstance elanInstance = ElanUtils.getElanInstanceByName(elanInstanceName);
 
         if (elanInstance == null) {
@@ -327,6 +335,35 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
         }
     }
 
+    void programRemoteDmacFlow(ElanInstance elanInstance, InterfaceInfo interfaceInfo){
+        ElanDpnInterfacesList elanDpnInterfacesList =  ElanUtils.getElanDpnInterfacesList(elanInstance.getElanInstanceName());
+        List<DpnInterfaces> dpnInterfaceLists =  elanDpnInterfacesList.getDpnInterfaces();
+        for(DpnInterfaces dpnInterfaces : dpnInterfaceLists){
+            if(dpnInterfaces.getDpId().equals(interfaceInfo.getDpId())) {
+                continue;
+            }
+            List<String> remoteElanInterfaces = dpnInterfaces.getInterfaces();
+            for(String remoteIf : remoteElanInterfaces) {
+                ElanInterfaceMac elanIfMac = ElanUtils.getElanInterfaceMacByInterfaceName(remoteIf);
+                InterfaceInfo remoteInterface = interfaceManager.getInterfaceInfo(remoteIf);
+                if(elanIfMac == null) {
+                    continue;
+                }
+                List<MacEntry> remoteMacEntries = elanIfMac.getMacEntry();
+                if(remoteMacEntries != null) {
+                    for (MacEntry macEntry : remoteMacEntries) {
+                        PhysAddress physAddress = macEntry.getMacAddress();
+                        ElanUtils.setupRemoteDmacFlow(interfaceInfo.getDpId(), remoteInterface.getDpId(),
+                                remoteInterface.getInterfaceTag(),
+                                elanInstance.getElanTag(),
+                                physAddress.getValue(),
+                                elanInstance.getElanInstanceName());
+                    }
+                }
+            }
+        }
+    }
+
     void addElanInterface(ElanInterface elanInterface, InterfaceInfo interfaceInfo, ElanInstance elanInstance) {
         String interfaceName = elanInterface.getName();
         String elanInstanceName = elanInterface.getElanInstanceName();
@@ -344,6 +381,12 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
             Optional<DpnInterfaces> existingElanDpnInterfaces = ElanUtils.read(broker, LogicalDatastoreType.OPERATIONAL, elanDpnInterfaces);
             if (!existingElanDpnInterfaces.isPresent()) {
                 createElanInterfacesList(elanInstanceName, interfaceName, dpId);
+                /*
+                 * Install remote DMAC flow.
+                 * This is required since this DPN is added later to the elan instance
+                 * and remote DMACs of other interfaces in this elan instance are not present in the current dpn.
+                 */
+                programRemoteDmacFlow(elanInstance, interfaceInfo);
             } else {
                 List<String> elanInterfaces = existingElanDpnInterfaces.get().getInterfaces();
                 elanInterfaces.add(interfaceName);
@@ -369,7 +412,7 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
                 } else {
                     elanForwardingEntriesHandler.addElanInterfaceForwardingTableList(elanInstance, interfaceName, physAddress);
                 }
-                if(interfaceInfo != null && isOperational(interfaceInfo)) {
+                if(isOperational(interfaceInfo)) {
                     logger.debug("Installing Static Mac-Entry on the Elan Interface:{} with MacAddress:{}", interfaceInfo, physAddress.getValue());
                     ElanUtils.setupMacFlows(elanInstance, interfaceInfo, ElanConstants.STATIC_MAC_TIMEOUT, physAddress.getValue());
                 }
@@ -695,7 +738,7 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
             // In case if there is a InterfacePort in the cache which is not in
             // operational state, skip processing it
             InterfaceInfo ifInfo = interfaceManager.getInterfaceInfoFromOperationalDataStore(ifName, interfaceInfo.getInterfaceType());
-            if (ifInfo == null || !isOperational(ifInfo)) {
+            if (!isOperational(ifInfo)) {
                 continue;
             }
 
@@ -727,7 +770,7 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
             // In case if there is a InterfacePort in the cache which is not in
             // operational state, skip processing it
             InterfaceInfo ifInfo = interfaceManager.getInterfaceInfoFromOperationalDataStore(ifName, interfaceInfo.getInterfaceType());
-            if (ifInfo == null || !isOperational(ifInfo)) {
+            if (!isOperational(ifInfo)) {
                 continue;
             }
 
@@ -931,6 +974,9 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
     }
 
     private boolean isOperational(InterfaceInfo interfaceInfo) {
+        if (interfaceInfo == null) {
+            return false;
+        }
         return ((interfaceInfo.getOpState() == InterfaceInfo.InterfaceOpState.UP) && (interfaceInfo.getAdminState() == InterfaceInfo.InterfaceAdminState.ENABLED));
     }
 
