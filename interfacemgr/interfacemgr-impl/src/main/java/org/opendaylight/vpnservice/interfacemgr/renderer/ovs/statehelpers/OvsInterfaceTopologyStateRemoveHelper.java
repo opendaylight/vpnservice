@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
+ * Copyright (c) 2015 - 2016 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -31,22 +31,21 @@ public class OvsInterfaceTopologyStateRemoveHelper {
     public static List<ListenableFuture<Void>> removePortFromBridge(InstanceIdentifier<OvsdbBridgeAugmentation> bridgeIid,
                                                                OvsdbBridgeAugmentation bridgeOld, DataBroker dataBroker) {
         List<ListenableFuture<Void>> futures = new ArrayList<>();
-        WriteTransaction t = dataBroker.newWriteOnlyTransaction();;
+        WriteTransaction transaction = dataBroker.newWriteOnlyTransaction();;
         BigInteger dpnId = IfmUtil.getDpnId(bridgeOld.getDatapathId());
 
         if (dpnId == null) {
             LOG.warn("Got Null DPID for Bridge: {}", bridgeOld);
             return futures;
         }
-        BridgeRefEntryKey bridgeRefEntryKey = new BridgeRefEntryKey(dpnId);
-        InstanceIdentifier<BridgeRefEntry> bridgeEntryId =
-                InterfaceMetaUtils.getBridgeRefEntryIdentifier(bridgeRefEntryKey);
-        t.delete(LogicalDatastoreType.OPERATIONAL, bridgeEntryId);
+
+        //delete bridge reference entry in interface meta operational DS
+        InterfaceMetaUtils.deleteBridgeRefEntry(dpnId, transaction);
 
         // FIX for ovsdb bug for delete TEP
         SouthboundUtils.deleteBridge(bridgeIid, dataBroker, futures);
 
-        futures.add(t.submit());
+        futures.add(transaction.submit());
         return futures;
     }
 }

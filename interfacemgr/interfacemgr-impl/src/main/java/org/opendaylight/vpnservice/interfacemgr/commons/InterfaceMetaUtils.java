@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
+ * Copyright (c) 2015 - 2016 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -57,6 +57,7 @@ public class InterfaceMetaUtils {
         return bridgeRefEntryInstanceIdentifierBuilder.build();
     }
 
+
     public static BridgeRefEntry getBridgeRefEntryFromOperDS(InstanceIdentifier<BridgeRefEntry> dpnBridgeEntryIid,
                                                              DataBroker dataBroker) {
         Optional<BridgeRefEntry> bridgeRefEntryOptional =
@@ -71,6 +72,15 @@ public class InterfaceMetaUtils {
         InstanceIdentifier.InstanceIdentifierBuilder<BridgeEntry> bridgeEntryIdBuilder =
                 InstanceIdentifier.builder(BridgeInterfaceInfo.class).child(BridgeEntry.class, bridgeEntryKey);
         return bridgeEntryIdBuilder.build();
+    }
+
+    public static BridgeEntry getBridgeEntryFromConfigDS(BigInteger dpnId,
+                                                         DataBroker dataBroker) {
+        BridgeEntryKey bridgeEntryKey = new BridgeEntryKey(dpnId);
+        InstanceIdentifier<BridgeEntry> bridgeEntryInstanceIdentifier =
+                InterfaceMetaUtils.getBridgeEntryIdentifier(bridgeEntryKey);
+        return getBridgeEntryFromConfigDS(bridgeEntryInstanceIdentifier,
+                        dataBroker);
     }
 
     public static BridgeEntry getBridgeEntryFromConfigDS(InstanceIdentifier<BridgeEntry> bridgeEntryInstanceIdentifier,
@@ -186,6 +196,8 @@ public class InterfaceMetaUtils {
 
     public static void createBridgeRefEntry(BigInteger dpnId, InstanceIdentifier<?> bridgeIid,
                                             WriteTransaction tx){
+        LOG.debug("Creating bridge ref entry for dpn: {} bridge: {}",
+                dpnId, bridgeIid);
         BridgeRefEntryKey bridgeRefEntryKey = new BridgeRefEntryKey(dpnId);
         InstanceIdentifier<BridgeRefEntry> bridgeEntryId =
                 InterfaceMetaUtils.getBridgeRefEntryIdentifier(bridgeRefEntryKey);
@@ -193,5 +205,15 @@ public class InterfaceMetaUtils {
                 new BridgeRefEntryBuilder().setKey(bridgeRefEntryKey).setDpid(dpnId)
                         .setBridgeReference(new OvsdbBridgeRef(bridgeIid));
         tx.put(LogicalDatastoreType.OPERATIONAL, bridgeEntryId, tunnelDpnBridgeEntryBuilder.build(), true);
+    }
+
+    public static void deleteBridgeRefEntry(BigInteger dpnId,
+                                            WriteTransaction tx) {
+        LOG.debug("Deleting bridge ref entry for dpn: {}",
+                dpnId);
+        BridgeRefEntryKey bridgeRefEntryKey = new BridgeRefEntryKey(dpnId);
+        InstanceIdentifier<BridgeRefEntry> bridgeEntryId =
+                InterfaceMetaUtils.getBridgeRefEntryIdentifier(bridgeRefEntryKey);
+        tx.delete(LogicalDatastoreType.OPERATIONAL, bridgeEntryId);
     }
 }

@@ -15,6 +15,7 @@ import org.opendaylight.vpnservice.datastoreutils.AsyncDataChangeListenerBase;
 import org.opendaylight.vpnservice.datastoreutils.DataStoreJobCoordinator;
 import org.opendaylight.vpnservice.interfacemgr.renderer.ovs.statehelpers.OvsInterfaceTopologyStateAddHelper;
 import org.opendaylight.vpnservice.interfacemgr.renderer.ovs.statehelpers.OvsInterfaceTopologyStateRemoveHelper;
+import org.opendaylight.vpnservice.interfacemgr.renderer.ovs.statehelpers.OvsInterfaceTopologyStateUpdateHelper;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentation;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
@@ -68,7 +69,11 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
         if(bridgeOld.getDatapathId()== null && bridgeNew.getDatapathId()!= null){
             DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
             RendererStateAddWorker rendererStateAddWorker = new RendererStateAddWorker(identifier, bridgeNew);
-            jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue() + bridgeNew.getDatapathId(), rendererStateAddWorker);
+            jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue(), rendererStateAddWorker);
+        } else if(bridgeOld.getDatapathId() != bridgeNew.getDatapathId()){
+            DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
+            RendererStateUpdateWorker rendererStateAddWorker = new RendererStateUpdateWorker(identifier, bridgeNew, bridgeOld);
+            jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue(), rendererStateAddWorker);
         }
     }
 
@@ -118,6 +123,27 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
             // to call the respective helpers.
             return OvsInterfaceTopologyStateRemoveHelper.removePortFromBridge(instanceIdentifier,
                     bridgeNew, dataBroker);
+        }
+    }
+    private class RendererStateUpdateWorker implements Callable<List<ListenableFuture<Void>>> {
+        InstanceIdentifier<OvsdbBridgeAugmentation> instanceIdentifier;
+        OvsdbBridgeAugmentation bridgeNew;
+        OvsdbBridgeAugmentation bridgeOld;
+
+
+        public RendererStateUpdateWorker(InstanceIdentifier<OvsdbBridgeAugmentation> instanceIdentifier,
+                                      OvsdbBridgeAugmentation bridgeNew, OvsdbBridgeAugmentation bridgeOld) {
+            this.instanceIdentifier = instanceIdentifier;
+            this.bridgeNew = bridgeNew;
+            this.bridgeOld = bridgeOld;
+        }
+
+        @Override
+        public List<ListenableFuture<Void>> call() throws Exception {
+            // If another renderer(for eg : CSS) needs to be supported, check can be performed here
+            // to call the respective helpers.
+            return OvsInterfaceTopologyStateUpdateHelper.updateBridgeRefEntry(instanceIdentifier,
+                    bridgeNew, bridgeOld, dataBroker);
         }
     }
 }
