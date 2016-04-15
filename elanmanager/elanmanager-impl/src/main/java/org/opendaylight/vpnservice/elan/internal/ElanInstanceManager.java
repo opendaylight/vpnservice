@@ -117,10 +117,6 @@ public class ElanInstanceManager extends AbstractDataChangeListener<ElanInstance
         if (existingElanTag != null && existingElanTag == update.getElanTag()) {
             return;
         } else if (update.getElanTag() == null) {
-            // update the elan-Instance with new properties
-            if(original.getMacTimeout().equals(update.getMacTimeout()) && original.getDescription().equalsIgnoreCase(update.getDescription())) {
-               return;
-            }
             ElanUtils.UpdateOperationalDataStore(broker, idManager, update);
             return;
         }

@@ -187,6 +187,7 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
 
         BigInteger dpId = interfaceInfo.getDpId();
         String elanName = elanInfo.getElanInstanceName();
+        long elanTag = elanInfo.getElanTag();
         String interfaceName = interfaceInfo.getInterfaceName();
         Elan elanState = ElanUtils.getElanByName(elanName);
         logger.debug("Removing the Interface:{} from elan:{}", interfaceName, elanName);
@@ -216,13 +217,13 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
                     DpnInterfaces dpnIfLists = ElanUtils.getElanInterfaceInfoByElanDpn(elanName, dpnInterface.getDpId());
                     if (dpnIfLists.getInterfaces().contains(interfaceName)) {
                         logger.debug("deleting the elanInterface from the ElanDpnInterface cache in pre-provision scenario of elan:{} dpn:{} interfaceName:{}", elanName, dpId, interfaceName);
-                        removeElanDpnInterfaceFromOperationalDataStore(elanName, dpId, interfaceName);
+                        removeElanDpnInterfaceFromOperationalDataStore(elanName, dpId, interfaceName, elanTag);
                         break;
                     }
                 }
             }
         } else {
-            removeElanDpnInterfaceFromOperationalDataStore(elanName, dpId, interfaceName);
+            removeElanDpnInterfaceFromOperationalDataStore(elanName, dpId, interfaceName, elanTag);
         }
 
         removeStaticELanFlows(elanInfo, interfaceInfo);
@@ -242,12 +243,35 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
         }
     }
 
-    private void removeElanDpnInterfaceFromOperationalDataStore(String elanName, BigInteger dpId, String interfaceName) {
+    private void removeElanDpnInterfaceFromOperationalDataStore(String elanName, BigInteger dpId, String interfaceName, long elanTag) {
         DpnInterfaces dpnInterfaces =  ElanUtils.getElanInterfaceInfoByElanDpn(elanName, dpId);
         if(dpnInterfaces != null) {
             List<String> interfaceLists = dpnInterfaces.getInterfaces();
             interfaceLists.remove(interfaceName);
-            updateElanDpnInterfacesList(elanName, dpId, interfaceLists);
+            if (interfaceLists == null || interfaceLists.isEmpty()) {
+                deleteAllRemoteMacsInADpn(elanName, dpId, elanTag);
+                deleteElanDpnInterface(elanName, dpId);
+            } else {
+                updateElanDpnInterfacesList(elanName, dpId, interfaceLists);
+            }
+        }
+    }
+
+    private void deleteAllRemoteMacsInADpn(String elanName, BigInteger dpId, long elanTag) {
+        List<DpnInterfaces> dpnInterfaces = ElanUtils.getInvolvedDpnsInElan(elanName);
+        for (DpnInterfaces dpnInterface : dpnInterfaces) {
+            BigInteger currentDpId = dpnInterface.getDpId();
+            if (!currentDpId.equals(dpId)) {
+                for (String elanInterface : dpnInterface.getInterfaces()) {
+                    ElanInterfaceMac macs = ElanUtils.getElanInterfaceMacByInterfaceName(elanInterface);
+                    if (macs == null) {
+                        continue;
+                    }
+                    for (MacEntry mac : macs.getMacEntry())
+                        mdsalManager.removeFlow(dpId, MDSALUtil.buildFlow(ElanConstants.ELAN_DMAC_TABLE,
+                                ElanUtils.getKnownDynamicmacFlowRef(ElanConstants.ELAN_DMAC_TABLE, dpId, currentDpId, mac.getMacAddress().getValue(), elanTag)));
+                }
+            }
         }
     }
 
@@ -835,18 +859,13 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
 
     private void removeStaticELanFlows(final ElanInstance elanInfo, final InterfaceInfo interfaceInfo) {
         BigInteger dpId = interfaceInfo.getDpId();
-        long elanTag = elanInfo.getElanTag();
         /*
          * If there are not elan ports, remove the unknown smac and default dmac
          * flows
          */
         DpnInterfaces dpnInterfaces = ElanUtils.getElanInterfaceInfoByElanDpn(elanInfo.getElanInstanceName(), dpId);
-        if(dpnInterfaces == null) {
-            return;
-        }
-        List <String> elanInterfaces = dpnInterfaces.getInterfaces();
-        if (elanInterfaces == null || elanInterfaces.isEmpty()) {
-
+        if (dpnInterfaces == null || dpnInterfaces.getInterfaces() == null || dpnInterfaces.getInterfaces().isEmpty()) {
+            // No more Elan Interfaces in this DPN
             logger.debug("deleting the elan: {} present on dpId: {}", elanInfo.getElanInstanceName(), dpId);
             removeDefaultTermFlow(dpId, elanInfo.getElanTag());
             removeUnknownDmacFlow(dpId, elanInfo);
@@ -935,6 +954,19 @@ public class ElanInterfaceManager extends AbstractDataChangeListener<ElanInterfa
                 .setInterfaces(interfaceNames).setKey(new DpnInterfacesKey(dpId)).build();
         MDSALUtil.syncWrite(broker, LogicalDatastoreType.OPERATIONAL, ElanUtils.getElanDpnInterfaceOperationalDataPath(elanInstanceName, dpId),
                 dpnInterface);
+    }
+
+    /**
+     * Delete elan dpn interface from operational DS.
+     *
+     * @param elanInstanceName
+     *            the elan instance name
+     * @param dpId
+     *            the dp id
+     */
+    private void deleteElanDpnInterface(String elanInstanceName, BigInteger dpId) {
+        MDSALUtil.syncDelete(broker, LogicalDatastoreType.OPERATIONAL,
+                ElanUtils.getElanDpnInterfaceOperationalDataPath(elanInstanceName, dpId));
     }
 
     private List<String> createElanInterfacesList(String elanInstanceName, String interfaceName, BigInteger dpId) {

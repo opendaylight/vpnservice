@@ -80,8 +80,11 @@ public class ElanPacketInHandler implements PacketProcessingListener {
                 }
                 String interfaceName = interfaceInfoOp.get().getInterfaceName();
                 ElanTagName elanTagName = ElanUtils.getElanInfoByElanTag(elanTag);
+                if (elanTagName == null) {
+                    logger.warn("not able to find elanTagName in elan-tag-name-map for elan tag {}", elanTag);
+                    return;
+                }
                 String elanName = elanTagName.getName();
-                Elan elanInfo = ElanUtils.getElanByName(elanName);
                 MacEntry macEntry = ElanUtils.getInterfaceMacEntriesOperationalDataPath(interfaceName, physAddress);
                 if(macEntry != null && macEntry.getInterface() == interfaceName) {
                     BigInteger macTimeStamp = macEntry.getControllerLearnedForwardingEntryTimestamp();
