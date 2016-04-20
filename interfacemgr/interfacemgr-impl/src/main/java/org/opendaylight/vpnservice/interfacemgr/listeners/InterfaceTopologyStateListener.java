@@ -58,7 +58,7 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
                 identifier, bridgeOld);
         DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
         RendererStateRemoveWorker rendererStateRemoveWorker = new RendererStateRemoveWorker(identifier, bridgeOld);
-        jobCoordinator.enqueueJob(bridgeOld.getBridgeName().getValue() + bridgeOld.getDatapathId(), rendererStateRemoveWorker);
+        jobCoordinator.enqueueJob(bridgeOld.getBridgeName().getValue(), rendererStateRemoveWorker);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
             DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
             RendererStateAddWorker rendererStateAddWorker = new RendererStateAddWorker(identifier, bridgeNew);
             jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue(), rendererStateAddWorker);
-        } else if(bridgeOld.getDatapathId() != bridgeNew.getDatapathId()){
+        } else if(!bridgeOld.getDatapathId().equals(bridgeNew.getDatapathId())){
             DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
             RendererStateUpdateWorker rendererStateAddWorker = new RendererStateUpdateWorker(identifier, bridgeNew, bridgeOld);
             jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue(), rendererStateAddWorker);
@@ -83,7 +83,7 @@ public class InterfaceTopologyStateListener extends AsyncDataChangeListenerBase<
                 identifier, bridgeNew);
         DataStoreJobCoordinator jobCoordinator = DataStoreJobCoordinator.getInstance();
         RendererStateAddWorker rendererStateAddWorker = new RendererStateAddWorker(identifier, bridgeNew);
-        jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue() + bridgeNew.getDatapathId(), rendererStateAddWorker);
+        jobCoordinator.enqueueJob(bridgeNew.getBridgeName().getValue(), rendererStateAddWorker);
     }
 
     private class RendererStateAddWorker implements Callable<List<ListenableFuture<Void>>> {
