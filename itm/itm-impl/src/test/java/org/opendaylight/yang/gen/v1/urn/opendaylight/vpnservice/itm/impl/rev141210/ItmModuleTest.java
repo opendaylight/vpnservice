@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ItmModuleTest {
+
     @Test
     public void testCustomValidation() {
         ItmModule module = new ItmModule(mock(ModuleIdentifier.class), mock(DependencyResolver.class));
