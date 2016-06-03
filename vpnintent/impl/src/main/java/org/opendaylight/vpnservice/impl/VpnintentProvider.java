@@ -52,8 +52,6 @@ public class VpnintentProvider implements VpnintentService, BindingAwareProvider
     private static final Logger LOG = LoggerFactory.getLogger(VpnintentProvider.class);
     public static final InstanceIdentifier<MplsLabels> LABELS_IID = IidFactory.getMplsLabelsIid();
     public static final InstanceIdentifier<Vpns> VPN_IID = IidFactory.getVpnsIid();
-    public static final InstanceIdentifier<VpnIntents> VPN_INTENT_IID = IidFactory.getVpnIntentIid();
-    public static final InstanceIdentifier<Endpoint> ENDPOINT_IID = IidFactory.getEndpointIid();
 
     private DataBroker dataBroker;
     private IntentMappingService intentMappingService;
@@ -135,6 +133,7 @@ public class VpnintentProvider implements VpnintentService, BindingAwareProvider
     public Future<RpcResult<Void>> addVpnEndpoint(AddVpnEndpointInput input) {
         Endpoint currentEndpoint = new EndpointBuilder().setIpPrefix(input.getIpPrefix())
                 .setSiteName(input.getSiteName()).setSwitchPortId(input.getSwitchPortId())
+                .setNextHopMac(input.getNextHopMac())
                 .setKey(new EndpointKey(input.getSiteName())).build();
         VpnIntents vpn = getVpn(input.getVpnName());
         String failOverType = null;
@@ -152,9 +151,11 @@ public class VpnintentProvider implements VpnintentService, BindingAwareProvider
         Long mplsLabel = mplsManager.getUniqueLabel(currentEndpoint);
 
         // Add info into Mapping Service
+        String macAddress = currentEndpoint.getNextHopMac() != null ?
+                currentEndpoint.getNextHopMac().getValue() : null;
         MappingServiceManager msManager = new MappingServiceManager(intentMappingService);
         msManager.add(currentEndpoint.getSiteName(), extractIP(currentEndpoint.getIpPrefix()),
-                currentEndpoint.getSwitchPortId(), mplsLabel, null);
+                currentEndpoint.getSwitchPortId(), mplsLabel, null, macAddress);
 
         if (vpn.getEndpoint() != null && vpn.getEndpoint().size() > 0) {
             IntentServiceManager intentManager = new IntentServiceManager(dataBroker);
@@ -174,7 +175,7 @@ public class VpnintentProvider implements VpnintentService, BindingAwareProvider
     }
 
     /**
-     * @param IpPrefix
+     * @param ipPrefix
      *            object
      * @return String representation of IP prefix
      */
