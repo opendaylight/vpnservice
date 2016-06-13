@@ -7,24 +7,32 @@
  */
 package org.opendaylight.vpnservice.neutronvpn;
 
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.vpnservice.mdsalutil.AbstractDataChangeListener;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.l3.attributes.Routes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.routers.attributes.Routers;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.routers.attributes.routers.Router;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.routers.attributes.routers.router.Interfaces;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.port.attributes.FixedIps;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.Ports;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.rev150712.Neutron;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 
 public class NeutronRouterChangeListener extends AbstractDataChangeListener<Router> implements AutoCloseable {
@@ -67,6 +75,27 @@ public class NeutronRouterChangeListener extends AbstractDataChangeListener<Rout
         }
     }
 
+    private Set<Port> getInterfaces(final Uuid deviceId) {
+        final Set<Port> interfaces = new HashSet<>();
+        InstanceIdentifier<Ports> path = InstanceIdentifier.create(Neutron.class).child(Ports.class);
+
+        try (ReadOnlyTransaction tx = broker.newReadOnlyTransaction()) {
+            final CheckedFuture<Optional<Ports>, ReadFailedException> future = tx.read(LogicalDatastoreType.CONFIGURATION, path);
+            Optional<Ports> optional = future.checkedGet();
+            if (optional.isPresent()) {
+                for (final Port port : optional.get().getPort()) {
+                    if (port.getDeviceOwner().equals("network:router_interface") && port.getDeviceId().equals(deviceId.getValue())) {
+                        interfaces.add(port);
+                    }
+                }
+            }
+        } catch (final ReadFailedException e) {
+            LOG.warn("Failed to read {}", path, e);
+        }
+
+        return interfaces;
+    }
+
     @Override
     protected void add(InstanceIdentifier<Router> identifier, Router input) {
         if (LOG.isTraceEnabled()) {
@@ -82,13 +111,16 @@ public class NeutronRouterChangeListener extends AbstractDataChangeListener<Rout
             LOG.trace("Removing router : key: " + identifier + ", value=" + input);
         }
         Uuid routerId = input.getUuid();
-        // fetch subnets associated to router
-        List<Interfaces> routerInterfaces = input.getInterfaces();
-        List<Uuid> routerSubnetIds = new ArrayList<Uuid>();
-        if (routerInterfaces != null) {
-            for (Interfaces rtrIf : routerInterfaces) {
-                routerSubnetIds.add(rtrIf.getSubnetId());
+        Set<Port> routerInterfaces = this.getInterfaces(input.getUuid());
+        List<Uuid> routerSubnetIds = new ArrayList<>();
+        if (!routerInterfaces.isEmpty()) {
+            Set<Uuid> uuids = new HashSet<>();
+            for (Port port : routerInterfaces) {
+                for (FixedIps fixedIps : port.getFixedIps()) {
+                    uuids.add(fixedIps.getSubnetId());
+                }
             }
+            routerSubnetIds.addAll(uuids);
         }
         nvpnManager.handleNeutronRouterDeleted(routerId, routerSubnetIds);
     }
@@ -105,24 +137,8 @@ public class NeutronRouterChangeListener extends AbstractDataChangeListener<Rout
         if (vpnId == null) {
             vpnId = routerId;
         }
-        List<Interfaces> oldInterfaces = (original.getInterfaces() != null) ? original.getInterfaces() : new
-                ArrayList<Interfaces>();
-        List<Interfaces> newInterfaces = (update.getInterfaces() != null) ? update.getInterfaces() : new
-                ArrayList<Interfaces>();
         List<Routes> oldRoutes = (original.getRoutes() != null) ? original.getRoutes() : new ArrayList<Routes>();
         List<Routes> newRoutes = (update.getRoutes() != null) ? update.getRoutes() : new ArrayList<Routes>();
-        if (!oldInterfaces.equals(newInterfaces)) {
-            for (Interfaces intrf : newInterfaces) {
-                if (!oldInterfaces.remove(intrf)) {
-                    // add new subnet
-                    nvpnManager.addSubnetToVpn(vpnId, intrf.getSubnetId());
-                }
-            }
-            //clear remaining old subnets
-            for (Interfaces intrf : oldInterfaces) {
-                nvpnManager.removeSubnetFromVpn(vpnId, intrf.getSubnetId());
-            }
-        }
         if (!oldRoutes.equals(newRoutes)) {
             Iterator<Routes> iterator = newRoutes.iterator();
             while (iterator.hasNext()) {

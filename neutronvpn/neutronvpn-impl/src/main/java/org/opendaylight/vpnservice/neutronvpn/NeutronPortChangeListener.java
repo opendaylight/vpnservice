@@ -48,8 +48,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 
 public class NeutronPortChangeListener extends AbstractDataChangeListener<Port> implements AutoCloseable {
@@ -190,25 +192,46 @@ public class NeutronPortChangeListener extends AbstractDataChangeListener<Port> 
 
     private void handleNeutronPortUpdated(Port portoriginal, Port portupdate) {
         LOG.debug("Add port to subnet");
-        // add port FixedIP to local Subnets DS
         Uuid vpnIdup = addPortToSubnets(portupdate);
+        Uuid vpnIdor = removePortFromSubnets(portoriginal);
 
+        // add port FixedIP to local Subnets DS
         if (vpnIdup != null) {
             nvpnManager.createVpnInterface(vpnIdup, portupdate);
             Uuid routerId = NeutronvpnUtils.getVpnMap(broker, vpnIdup).getRouterId();
             if(routerId != null) {
                 nvpnManager.addToNeutronRouterInterfacesMap(routerId, portupdate.getUuid().getValue());
             }
+            if ((vpnIdor != vpnIdup ||
+                 !portoriginal.getDeviceOwner().equals("network:router_interface")) &&
+                portupdate.getDeviceOwner().equals("network:router_interface")) {
+                Set<Uuid> subnetUuids = new HashSet<>();
+                for (FixedIps fixedIps : portupdate.getFixedIps()) {
+                    subnetUuids.add(fixedIps.getSubnetId());
+                }
+                for (Uuid subnetUuid : subnetUuids) {
+                    nvpnManager.addSubnetToVpn(vpnIdup, subnetUuid);
+                }
+            }
         }
 
         // remove port FixedIP from local Subnets DS
-        Uuid vpnIdor = removePortFromSubnets(portoriginal);
-
         if (vpnIdor != null) {
             nvpnManager.deleteVpnInterface(portoriginal);
             Uuid routerId = NeutronvpnUtils.getVpnMap(broker, vpnIdor).getRouterId();
             if(routerId != null) {
                 nvpnManager.removeFromNeutronRouterInterfacesMap(routerId, portoriginal.getUuid().getValue());
+            }
+            if ((vpnIdor != vpnIdup ||
+                 !portupdate.getDeviceOwner().equals("network:router_interface")) &&
+                portoriginal.getDeviceOwner().equals("network:router_interface")) {
+                Set<Uuid> subnetUuids = new HashSet<>();
+                for (FixedIps fixedIps : portoriginal.getFixedIps()) {
+                    subnetUuids.add(fixedIps.getSubnetId());
+                }
+                for (Uuid subnetUuid : subnetUuids) {
+                    nvpnManager.removeSubnetFromVpn(vpnIdor, subnetUuid);
+                }
             }
         }
     }
@@ -266,7 +289,7 @@ public class NeutronPortChangeListener extends AbstractDataChangeListener<Port> 
     private void createElanInterface(Port port, String name) {
         String elanInstanceName = port.getNetworkId().getValue();
         List<PhysAddress> physAddresses = new ArrayList<>();
-        physAddresses.add(new PhysAddress(port.getMacAddress()));
+        physAddresses.add(new PhysAddress(String.valueOf(port.getMacAddress().getValue())));
 
         InstanceIdentifier<ElanInterface> id = InstanceIdentifier.builder(ElanInterfaces.class).child(ElanInterface
                 .class, new ElanInterfaceKey(name)).build();
@@ -311,6 +334,15 @@ public class NeutronPortChangeListener extends AbstractDataChangeListener<Port> 
                     NeutronvpnUtils.unlock(lockManager, lockName);
                 }
             }
+            if (port.getDeviceOwner().equals("network:router_interface")) {
+                Set<Uuid> subnetUuids = new HashSet<>();
+                for (FixedIps fixedIps : port.getFixedIps()) {
+                    subnetUuids.add(fixedIps.getSubnetId());
+                }
+                for (Uuid subnetUuid : subnetUuids) {
+                    nvpnManager.addSubnetToVpn(vpnId, subnetUuid);
+                }
+            }
         }
         return vpnId;
     }
@@ -343,6 +375,15 @@ public class NeutronPortChangeListener extends AbstractDataChangeListener<Port> 
             } finally {
                 if (isLockAcquired) {
                     NeutronvpnUtils.unlock(lockManager, lockName);
+                }
+            }
+            if (port.getDeviceOwner().equals("network:router_interface")) {
+                Set<Uuid> subnetUuids = new HashSet<>();
+                for (FixedIps fixedIps : port.getFixedIps()) {
+                    subnetUuids.add(fixedIps.getSubnetId());
+                }
+                for (Uuid subnetUuid : subnetUuids) {
+                    nvpnManager.removeSubnetFromVpn(vpnId, subnetUuid);
                 }
             }
         }

@@ -9,10 +9,12 @@
 package org.opendaylight.vpnservice.neutronvpn;
 
 import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.yang.gen.v1.urn.huawei.params.xml.ns.yang.l3vpn.rev140815.VpnInterfaces;
 import org.opendaylight.yang.gen.v1.urn.huawei.params.xml.ns.yang.l3vpn.rev140815.vpn.interfaces.VpnInterface;
 import org.opendaylight.yang.gen.v1.urn.huawei.params.xml.ns.yang.l3vpn.rev140815.vpn.interfaces.VpnInterfaceKey;
@@ -31,6 +33,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.NetworkKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.provider.ext.rev150712.NetworkProviderExtension;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.provider.ext.rev150712.neutron.networks.network.Segments;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.port.attributes.FixedIps;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.Ports;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.PortKey;
@@ -65,7 +68,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -192,17 +197,24 @@ public class NeutronvpnUtils {
         logger.info("getNeutronRouterSubnetIds for {}", routerId.getValue());
 
         List<Uuid> subnetIdList = new ArrayList<Uuid>();
-        Router router = getNeutronRouter(broker, routerId);
-        if (router != null) {
-            List<org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.routers.attributes.routers.router
-                    .Interfaces> interfacesList = router.getInterfaces();
-            if (interfacesList != null) {
-                for (org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.l3.rev150712.routers.attributes.routers
-                        .router.Interfaces interfaces : interfacesList) {
-                    subnetIdList.add(interfaces.getSubnetId());
+        InstanceIdentifier<Ports> path = InstanceIdentifier.create(Neutron.class).child(Ports.class);
+        final Set<Uuid> subnetUuids = new HashSet<>();
+        try (ReadOnlyTransaction tx = broker.newReadOnlyTransaction()) {
+            final CheckedFuture<Optional<Ports>, ReadFailedException> future = tx.read(LogicalDatastoreType.CONFIGURATION, path);
+            Optional<Ports> optional = future.checkedGet();
+            if (optional.isPresent()) {
+                for (final Port port : optional.get().getPort()) {
+                    if (port.getDeviceOwner().equals("network:router_interface") && port.getDeviceId().equals(routerId.getValue())) {
+                        for (FixedIps fixedIps : port.getFixedIps()) {
+                            subnetUuids.add(fixedIps.getSubnetId());
+                        }
+                    }
                 }
             }
+        } catch (final ReadFailedException e) {
+            logger.error("Failed to read {}", path, e);
         }
+        subnetIdList.addAll(subnetUuids);
         logger.info("returning from getNeutronRouterSubnetIds for {}", routerId.getValue());
         return subnetIdList;
     }
@@ -271,7 +283,7 @@ public class NeutronvpnUtils {
                     .class).child(Subnet.class, subnetkey);
             Optional<Subnet> subnet = read(broker, LogicalDatastoreType.CONFIGURATION,subnetidentifier);
             if (subnet.isPresent()) {
-                cidr = subnet.get().getCidr();
+                cidr = String.valueOf(subnet.get().getCidr().getValue());
                 // Extract the prefix length from cidr
                 String[] parts = cidr.split("/");
                 if ((parts.length == 2)) {
