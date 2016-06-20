@@ -134,7 +134,9 @@ public class BgpCounters extends TimerTask {
                 socket.close();
                 return;
             }
-            if (ret == -1) {
+            if ((ret == (int) gt) || (ret == (int)hash)) {
+                break;
+            } else if (ret == -1) {
                 LOGGER.error("Connection closed by BGPd.");
                 socket.close();
                 return;
