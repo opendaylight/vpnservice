@@ -46,7 +46,7 @@ import org.opendaylight.vpnservice.alivenessmonitor.internal.AlivenessMonitor;
 import org.opendaylight.vpnservice.alivenessmonitor.internal.AlivenessProtocolHandler;
 import org.opendaylight.vpnservice.alivenessmonitor.internal.AlivenessProtocolHandlerARP;
 import org.opendaylight.vpnservice.alivenessmonitor.internal.AlivenessProtocolHandlerLLDP;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddressBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddressBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.alivenessmonitor.rev150629.EtherTypes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.alivenessmonitor.rev150629.MonitorPauseInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vpnservice.alivenessmonitor.rev150629.MonitorPauseInputBuilder;
