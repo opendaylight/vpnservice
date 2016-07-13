@@ -10,7 +10,7 @@ module vpnintent {
     namespace "urn:opendaylight:params:xml:ns:yang:vpnintent";
     prefix "vpnintent";
 
-    import ietf-inet-types { prefix inet; revision-date 2010-09-24;}
+    import ietf-inet-types { prefix inet; revision-date 2013-07-15;}
 
     revision "2015-01-05" {
         description "Initial revision of VPN intent model.
