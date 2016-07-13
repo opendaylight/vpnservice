@@ -123,7 +123,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <bundle>mvn:org.opendaylight.vpnservice/countermanager/${fcaps.manager.version}</bundle>
   </feature>
   <feature name='odl-fcaps-application' version='${project.version}' description='OpenDaylight :: fcapsapp'>
-    <feature version="${openflowplugin.version}">odl-openflowplugin-all</feature>
+    <feature version="${openflowplugin.version}">odl-openflowplugin-flow-services-rest</feature>
     <bundle>mvn:org.opendaylight.vpnservice/fcapsapplication-jmxapi/${fcaps.app.version}</bundle>
     <bundle>mvn:org.opendaylight.vpnservice/fcapsapplication-impl/${fcaps.app.version}</bundle>
     <configfile finalname="etc/opendaylight/karaf/73-fcaps-app.xml">mvn:org.opendaylight.vpnservice/fcapsapplication-impl/${fcaps.app.version}/xml/config    </configfile>
