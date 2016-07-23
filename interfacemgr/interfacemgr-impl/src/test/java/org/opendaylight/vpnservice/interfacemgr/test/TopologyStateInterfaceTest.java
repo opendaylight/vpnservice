@@ -1,5 +1,9 @@
-/**
- * Created by eranjsu on 28-Dec-15.
+/*
+ * Copyright (c) 2015, 2016 Ericsson India Global Services Pvt Ltd. and others.  All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 package org.opendaylight.vpnservice.interfacemgr.test;
 
@@ -194,7 +198,7 @@ public class TopologyStateInterfaceTest {
         doReturn(Futures.immediateCheckedFuture(expectedInterface)).when(mockReadTx).read(
                 LogicalDatastoreType.OPERATIONAL, interfaceStateIdentifier);
         updateHelper.updateTunnelState(dataBroker, newTerminationPoint, null);
-        
+
         //verify
         InstanceIdentifier<org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.interfaces.rev140508.interfaces.state.Interface> ifStateId =
                 IfmUtil.buildStateInterfaceId(null);
