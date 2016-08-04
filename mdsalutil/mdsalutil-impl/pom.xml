@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.opendaylight.vpnservice</groupId>
         <artifactId>config-parent</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
+        <version>0.2.4-SNAPSHOT</version>
         <relativePath>../../commons/config-parent</relativePath>
      </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opendaylight.vpnservice</groupId>
     <artifactId>mdsalutil-impl</artifactId>
-    <version>0.2.3-SNAPSHOT</version>    
+    <version>0.2.4-SNAPSHOT</version>    
     <packaging>bundle</packaging>
 
     <dependencies>
